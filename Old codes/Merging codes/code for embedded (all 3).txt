@@ -1,0 +1,336 @@
+#include "mcc_generated_files/mcc.h"
+
+//start up confoguration 
+
+//#define frequencies 
+#define _XTAL_FREQ 4000000
+#define I2C_freq 100000 
+
+
+//display config location 
+
+#define unlit 0x3e 
+#define lit 0x38 
+#define zero 0x3f 
+#define one 0x6 
+#define two 0x5b 
+#define three 0x4f 
+#define four 0x66 
+#define five 0x6d 
+#define six 0x7d 
+#define seven 0x7 
+#define eight 0x7f 
+#define nine 0x67 
+
+unsigned char digits[]={unlit,lit,zero,one,two,three,four,five,six,seven,eight,nine}; 
+
+//MCP data sheet info location 
+
+//needs write address 
+
+//read address 
+
+//IODIR 
+
+//GPIO 
+
+#define mcp23008_address_write 0x40 //important changed based on a1,a0,a2
+#define mcp23008_address_read 0x41 //important changed based on a1,a0,a2
+#define MCP_IODIR 0x00//important 
+#define MCP_GPIO 0x09//important 
+#define MCP_IPOL 0x01 
+#define MCP_GPINTEN 0x02 
+#define MCP_DEFVAL 0x03 
+#define MCP_INTCON 0x04 
+#define MCP_IOCON 0x05 
+#define MCP_GPPU 0x06 
+#define MCP_INTF 0x07 
+#define MCP_INTCAP 0x08 
+#define MCP_OLAT 0x0A 
+
+//Declairng and intialising funtions
+
+void diagnostic(void);
+void motor_fwd(unsigned char dir, unsigned char spd, bool STAT);
+void movement(void);
+bool IsOptoL(void);
+bool IsOptoR(void);
+void rightPosition(void);
+void leftPosition(void);
+
+//setting up functions which are gonna be used 
+
+void PIC_Initialise (void); //Pic
+void I2C_Initialise (void); //i2c
+void MCP23008_Initialise (void); //mcp
+void IdleI2C (void);  //Idlei2c
+void StartI2C (void);  //start i2c
+void I2C_send_data (unsigned char device_address,unsigned char register_address,unsigned char register_data) ; //i2c send data requires 3 unsigned char 
+void WriteI2C (unsigned char data ); //writei2c requires unsigned char
+void StopI2C (void); //stopi2c
+//void LED_flash (void);
+
+//Declaring and initialising variables
+int adcResult, intialResult;
+int UnLit = 0;
+int Lit = 0;
+
+ 
+
+
+
+//Servo position to the right
+void rightPosition(void)//naming the function
+{
+  unsigned int i;//declaring an unsigned integer called 'i'
+  for(i=0;i<50;i++)//starting a for loop, intialising 'i' to 0 and incrementing it by 1 upto 50
+  {
+    SERVO_PWM_PORT = 1;//setting the PWM signal HIGH
+    __delay_us(1800);//holding it HIGH for 1200us
+    SERVO_PWM_PORT = 0;//pulling the PWM signal LOW
+    __delay_us(19200);//holding it LOW for 19200us
+  }
+}
+//Servo position to the left
+void leftPosition(void) //180 Degree
+{
+  unsigned int i;
+  for(i=0;i<50;i++)
+  {
+    SERVO_PWM_PORT = 1;
+    __delay_us(2150);
+    SERVO_PWM_PORT = 0;
+    __delay_us(19200);
+    
+  }
+}
+//Analoge to Digital Conversion (ADC) function
+//void adcFunction(void)
+//{
+ //__delay_us(7);//delaying the code by 7us to slow it down
+         // ADCON0bits.GO = 1;//setting the 'ADC begin' bit to HIGH
+          //while(ADCON0bits.GO==1)//pausing the code while the ADC conversion is taking place
+          //{
+          //}
+          
+         // adcResult = (ADRESH<<8)+ADRESL;//Saving the 10-bit result of the ADC to the adcResult variable
+         //adcResult = ADRESH;
+          
+
+void movement(void) // Loop for ever
+    {
+        motor_fwd('L', 255, HIGH);
+        motor_fwd('R', 255, HIGH);
+         //initial motor conditions
+
+        if (IsOptoR())
+        { // 0 for octo-coupler is dark and 1 is light
+           motor_fwd('L', 255, HIGH);
+            motor_fwd('R', 105, HIGH);
+////            continue;
+        }
+        else if (IsOptoL())
+        { // 0 for octo-coupler is dark and 1 is light
+            motor_fwd('L', 105, HIGH);
+            motor_fwd('R', 255, HIGH);
+////            continue;
+        }
+
+    }
+
+void diagnostic(void) // Toggles leds for 0.3s each (Tcy = 1us)
+{
+    LED_LEFT_Toggle(); // PORTCbits.RC5 = 0
+    LED_RIGHT_Toggle(); // PORTCbits.RC6 = 1
+    __delay_ms(300); // 0.3 second delay
+    LED_LEFT_Toggle(); // PORTCbits.RC5 = 1
+    LED_RIGHT_Toggle(); // PORTCbits.RC6 = 0
+}
+
+void motor_fwd(unsigned char dir, unsigned char spd, bool STAT)
+{
+    if (dir == 'L')
+    {
+        CCPR2L = spd; //left motor speed
+        LEFT_MTR_EN_PORT = STAT; // HIGH or LOW for left motor
+    }
+    else
+    {
+        CCPR1L = spd; // right motor speed
+        RIGHT_MTR_EN_PORT = STAT; // HIGH or LOW for right motor
+    }
+    }
+
+bool IsOptoL(void) // return true when left opto is dark (dark = 0, light = 1)
+{
+    return (OPTO_LEFT_GetValue() == 0);
+}
+
+bool IsOptoR(void) // return true when right opto is dark (dark = 0, light = 1)
+{
+    return (OPTO_RIGHT_GetValue() == 0);
+}
+
+//sub routines - the functions being created 
+
+void I2C_Initialise () 
+{  
+    SSP1STAT = 0x00; 
+    SSP1CON1 = 0x28; 
+    SSP1CON2 = 0x00; 
+    SSP1CON3 = 0x08; 
+    SSP1ADD = 0x09; 
+} 
+
+void PIC_Initialise (void) 
+{ 
+    PORTA=PORTB=PORTC=0; 
+    LATA=LATB=LATC = 0x00; 
+    TRISA=TRISB=TRISC=0x00; 
+    TRISC=0b00011000; 
+    ANSELC=0; 
+} 
+
+void MCP23008_Initialise (void) 
+{ 
+  //LED_flash(); 
+  I2C_send_data(mcp23008_address_write,MCP_IODIR,0x00); 
+  //LED_flash(); 
+  I2C_send_data(mcp23008_address_write,MCP_IPOL,0x00); 
+  //LED_flash(); 
+  I2C_send_data(mcp23008_address_write,MCP_GPINTEN,0x00); 
+  //LED_flash(); 
+  I2C_send_data(mcp23008_address_write,MCP_IOCON,0x3E); 
+  //LED_flash(); 
+  I2C_send_data(mcp23008_address_write,MCP_GPPU,0x00); 
+  //LED_flash(); 
+} 
+//void LED_flash (void)
+//{
+  //  PORTBbits.RB0 =1;
+  //  __delay_ms(500);
+  //  PORTBbits.RB0 =0;
+  //  __delay_ms(500);
+   
+//}
+void I2C_send_data (unsigned char device_address,unsigned char register_address,unsigned char register_data)  
+{ 
+    StartI2C();
+    WriteI2C(device_address); 
+    IdleI2C(); 
+    WriteI2C(register_address); 
+    IdleI2C(); 
+    WriteI2C(register_data); 
+    IdleI2C(); 
+    StopI2C(); 
+} 
+
+void IdleI2C(void) 
+{ 
+
+    while ((SSP1CON2 & 0x1F)||(SSP1STAT & 0x02)); 
+} 
+
+void StartI2C (void) 
+{ 
+    PIR1bits.SSPIF = 0; 
+    SSP1CON2bits.SEN = 1; 
+    while (!PIR1bits.SSPIF); 
+    PIR1bits.SSPIF=0; 
+} 
+
+void WriteI2C (unsigned char data) 
+{ 
+    SSP1BUF = data; 
+    while (SSP1STATbits.BF); 
+} 
+
+void StopI2C() 
+{ 
+    SSP1CON2bits.PEN = 1; 
+}
+    
+
+
+
+
+
+
+void main(void)
+{
+    SYSTEM_Initialize();// Initialise the device
+    LED_RIGHT_SetLow();//setting the back right LED to be off
+    diagnostic();
+    
+    PIC_Initialise(); 
+    I2C_Initialise(); 
+    MCP23008_Initialise();
+
+
+      while(1)//starting an infinate while loop
+      {        
+          
+         motor_fwd('L', 235, HIGH);
+        motor_fwd('R', 255, HIGH);
+     //    initial motor conditions
+
+       // if (IsOptoR())
+       // { // 0 for octo-coupler is dark and 1 is light
+           //motor_fwd('L', 255, HIGH);
+          // motor_fwd('R', 105, HIGH);
+//            continue;
+        //}
+     //   else if (IsOptoL())
+     //   { // 0 for octo-coupler is dark and 1 is light
+     //      motor_fwd('L', 105, HIGH);
+     //       motor_fwd('R', 255, HIGH);
+//            continue;
+     //  }
+          
+          
+         // adcFunction();//calling the ADC function to detect if there is light in front
+          
+       //  if(BUMPER_RIGHT_PORT==0){// IF argument testing if the left bumper is LOW
+          //    LED_RIGHT_SetHigh();//if it is LOW then the back right LED is turned on
+           //  UnLit=UnLit+1;//un-lit variable is increased by 1
+           //   __delay_ms(2000);// the code is paused by 2 seconds
+            //  LED_RIGHT_SetLow();//before the back right LED is turned off again
+           // }
+          
+          
+          
+          //adcResult is high when its light
+          //and high when dark
+              
+        //  if(adcResult>50){//IF argument testing if the ADC value is greater than 512
+          //    LED_LEFT_SetLow();// if it is, the back left LED is turned on
+            //  leftPosition();// the function to move the servo to the right is called
+          
+          
+         
+         // }else{//an else argument is declared
+             // LED_LEFT_SetHigh();// the back left LED is turned off
+           //   rightPosition();// and the function to move the servo back to the left position is called
+           //   adcResult=0;
+           //   __delay_ms(3000);// its held there for 2 seconds
+              
+           //   if(BUMPER_LEFT_PORT==0){// IF argument testing if the left bumper is LOW
+           //   LED_LEFT_SetHigh();//if it is LOW then the back right LED is turned on
+           //   Lit=Lit+1;//un-lit variable is increased by 1
+           //   __delay_ms(2000);// the code is paused by 2 seconds
+           //   LED_LEFT_SetLow();//before the back right LED is turned off again
+           //  }
+         // }//closing the else loop
+          int i = 0; 
+        for (i=0;i<12;i++)
+        { 
+            I2C_send_data (mcp23008_address_write,MCP_GPIO, digits[i]); 
+            __delay_ms(500); 
+        } 
+      }//closing the while loop
+}//closing the main function
+
+
+/**
+ End of File
+*/
