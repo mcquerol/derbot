@@ -10,11 +10,17 @@
 *.lst linguist-vendored
 *.map linguist-vendored
 *.tmp linguist-vendored
+*.d linguist-vendored
 
 # Mark directories commonly used for build outputs as ignored
 /build/* linguist-vendored
 /output/* linguist-vendored
 /dist/* linguist-vendored
 
-# Ignore any SWIG-related or unknown interface files if present
+# SWIG-related or other interface files
 *.i linguist-vendored
+*.swg linguist-vendored
+*.swig linguist-vendored
+
+# If needed, force any remaining files to be recognized as C language
+* linguist-language=C
