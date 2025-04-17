@@ -16,6 +16,7 @@
 /build/* linguist-vendored
 /output/* linguist-vendored
 /dist/* linguist-vendored
+Old Codes/** linguist-generated
 
 # SWIG-related or other interface files
 *.i linguist-vendored
