@@ -1,0 +1,30 @@
+# === Ignore all legacy and build folders ===
+Old\ codes/** linguist-generated
+DerbotCodeWeUsedInComp/build/** linguist-generated
+DerbotCodeWeUsedInComp/*.X/** linguist-generated
+FINALFINALDERBOT/build/** linguist-generated
+FINAL_DERBOT.X/** linguist-generated
+
+# === Ignore MPLAB/IDE build artifacts ===
+*.elf linguist-generated
+*.o   linguist-generated
+*.a   linguist-generated
+*.hex linguist-generated
+*.cof linguist-generated
+*.map linguist-generated
+*.sdb linguist-generated
+*.d   linguist-generated
+*.lst linguist-generated
+
+# === Optional: exclude old zips/docs/backups ===
+*.zip linguist-generated
+*.txt linguist-documentation
+*.pdf linguist-documentation
+
+# === Ignore SWIG-related interface files if present ===
+*.i   linguist-generated
+*.swg linguist-generated
+*.swig linguist-generated
+
+# === Optional: force all other code to be treated as C (if needed) ===
+# * linguist-language=C
