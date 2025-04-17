@@ -27,4 +27,4 @@ FINAL_DERBOT.X/** linguist-generated
 *.swig linguist-generated
 
 # === Optional: force all other code to be treated as C (if needed) ===
-# * linguist-language=C
+* linguist-language=C
