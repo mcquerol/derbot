@@ -19,3 +19,12 @@ DerbotCodeWeUsedInComp/.X/** linguist-generated
 *.zip linguist-generated
 *.txt linguist-documentation
 *.pdf linguist-documentation
+
+# Ignore any SWIG-related or unknown interface files if present
+ # SWIG-related or other interface files
+ *.i linguist-vendored
+ *.swg linguist-vendored
+ *.swig linguist-vendored
+ 
+ # If needed, force any remaining files to be recognized as C language
+ * linguist-language=C
